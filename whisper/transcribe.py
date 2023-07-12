@@ -13,7 +13,7 @@ from .audio import (
     N_FRAMES,
     N_SAMPLES,
     SAMPLE_RATE,
-    log_mel_spectrogram,
+    mel_spectrogram,
     pad_or_trim,
 )
 from .decoding import DecodingOptions, DecodingResult
@@ -118,7 +118,11 @@ def transcribe(
         decode_options["fp16"] = False
 
     # Pad 30-seconds of silence to the input audio, for slicing
-    mel = log_mel_spectrogram(audio, padding=N_SAMPLES)
+    mel_spec = mel_spectrogram(audio, padding=N_SAMPLES)
+    mel = torch.log10(mel_spec)
+    mel = torch.maximum(mel, mel.max() - 8.0)
+    mel = (mel + 4.0) / 4.0
+    
     content_frames = mel.shape[-1] - N_FRAMES
 
     if decode_options.get("language", None) is None:
